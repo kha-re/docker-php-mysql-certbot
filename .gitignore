@@ -1,0 +1,6 @@
+.env
+docker/.env
+src/.env
+docker/certbot
+docker/nginx/log
+docker/mysql

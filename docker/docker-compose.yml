@@ -1,0 +1,63 @@
+version: "3.8"
+
+networks:
+  app-network:
+    external: false
+    # name: app-network
+
+services:
+  db:
+    container_name: db
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password    
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_DATABASE: $MYSQL_DATABASE
+      DB_TZ: $DB_TZ
+    volumes:
+      - ./mysql:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    networks:
+      - app-network
+  
+  app:
+    container_name: app
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    env_file: .env
+    restart: always
+    working_dir: /var/www
+    volumes:
+      - ../src:/var/www
+    networks:
+      - app-network
+  
+  nginx:
+    container_name: nginx
+    image: nginx:1.15.12-alpine
+    env_file: .env
+    restart: always
+    ports:
+      - "8994:80"
+    volumes:
+      - ../src:/var/www
+      - ./nginx:/etc/nginx/conf.d
+      - ./nginx/log/:/var/log/nginx
+      - ./certbot:/etc/letsencrypt
+    networks:
+      - app-network
+
+  certbot:
+    depends_on:
+      - nginx
+    image: certbot/certbot:latest
+    container_name: certbot
+    volumes:
+      - ./certbot:/etc/letsencrypt
+      - ../src/html:/var/www/html
+    command: certonly --webroot --webroot-path=/var/www/html --email you@email.address --agree-tos --no-eff-email --staging -d domain.tld -d www.domain.tld
+    networks:
+      - app-network
