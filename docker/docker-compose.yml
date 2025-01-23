@@ -3,7 +3,7 @@
 networks:
   app-network:
     external: false
-    # name: app-network
+    name: app-network
 
 services:
   db:
